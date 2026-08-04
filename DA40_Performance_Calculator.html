@@ -1,0 +1,1937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+<title>DA40 G1000 NXi — Performance Calculator · IO-360-M1A</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0e11;
+    --bg-2:#0f1418;
+    --panel:#141a20;
+    --panel-2:#1a2128;
+    --border:#232d36;
+    --border-lit:#3a4a57;
+    --text:#d8dfe6;
+    --text-dim:#8a97a3;
+    --text-faint:#5a6772;
+    --amber:#ffb000;
+    --amber-dim:#a87800;
+    --cyan:#00d4ff;
+    --cyan-dim:#008aa8;
+    --green:#5eff9e;
+    --red:#ff4a4a;
+    --magenta:#ff5ac0;
+    --warn:#ff8c3a;
+    --grid:rgba(255,176,0,0.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Space Grotesk',system-ui,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    line-height:1.4;
+    overflow-x:hidden;
+    background-image:
+      radial-gradient(ellipse at top left, rgba(0,212,255,0.04), transparent 60%),
+      radial-gradient(ellipse at bottom right, rgba(255,176,0,0.04), transparent 60%),
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+  }
+  .mono{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums}
+
+  /* TOP BAR */
+  .topbar{
+    border-bottom:1px solid var(--border);
+    background:linear-gradient(180deg, rgba(20,26,32,.95), rgba(10,14,17,.8));
+    padding:12px 20px;
+    display:flex;justify-content:space-between;align-items:center;
+    gap:18px;flex-wrap:wrap;
+    backdrop-filter: blur(6px);
+    position:sticky;top:0;z-index:20;
+  }
+  .brand{display:flex;align-items:center;gap:14px}
+  .brand-mark{
+    width:40px;height:40px;
+    display:grid;place-items:center;
+    border:1px solid var(--amber);
+    color:var(--amber);
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;font-size:11px;
+    letter-spacing:.5px;
+    background:rgba(255,176,0,0.04);
+    box-shadow:0 0 20px rgba(255,176,0,.15), inset 0 0 10px rgba(255,176,0,.05);
+  }
+  .brand-title{font-weight:600;font-size:14px;letter-spacing:.02em}
+  .brand-sub{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);letter-spacing:.05em}
+  .topbar-meta{
+    display:flex;gap:18px;font-family:'JetBrains Mono',monospace;
+    font-size:11px;color:var(--text-dim);letter-spacing:.08em;text-transform:uppercase;
+  }
+  .topbar-meta span b{color:var(--amber);font-weight:500}
+
+  /* LAYOUT */
+  .wrap{max-width:1400px;margin:0 auto;padding:24px 20px 80px}
+  .grid{display:grid;grid-template-columns:minmax(320px,440px) 1fr;gap:20px}
+  @media (max-width:960px){.grid{grid-template-columns:1fr}}
+
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:2px;
+    position:relative;
+  }
+  .panel::before{
+    content:"";position:absolute;top:-1px;left:-1px;
+    width:14px;height:14px;
+    border-top:2px solid var(--amber);
+    border-left:2px solid var(--amber);
+    pointer-events:none;
+  }
+  .panel::after{
+    content:"";position:absolute;bottom:-1px;right:-1px;
+    width:14px;height:14px;
+    border-bottom:2px solid var(--amber);
+    border-right:2px solid var(--amber);
+    pointer-events:none;
+  }
+  .panel-header{
+    padding:14px 18px;
+    border-bottom:1px solid var(--border);
+    display:flex;justify-content:space-between;align-items:baseline;
+    background:linear-gradient(180deg, rgba(255,176,0,.04), transparent);
+  }
+  .panel-header h2{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:500;font-size:12px;
+    letter-spacing:.15em;text-transform:uppercase;
+    color:var(--amber);
+  }
+  .panel-header .tag{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;color:var(--text-faint);letter-spacing:.1em;
+  }
+  .panel-body{padding:18px}
+
+  /* INPUTS */
+  .field{margin-bottom:16px}
+  .field-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;color:var(--text-dim);
+    letter-spacing:.15em;text-transform:uppercase;
+    margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;
+    gap:8px;
+  }
+  .field-label .hint{color:var(--text-faint);letter-spacing:.05em;text-transform:none}
+
+  .inp,.sel{
+    width:100%;
+    background:var(--bg-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:10px 12px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:14px;
+    border-radius:0;
+    outline:none;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  .inp:focus,.sel:focus{
+    border-color:var(--amber);
+    box-shadow:0 0 0 1px var(--amber), 0 0 12px rgba(255,176,0,.2);
+  }
+  .inp::placeholder{color:var(--text-faint)}
+
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+
+  .seg{
+    display:flex;gap:0;border:1px solid var(--border);
+  }
+  .seg button{
+    flex:1;
+    background:var(--bg-2);
+    border:none;
+    color:var(--text-dim);
+    padding:8px 4px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:.1em;
+    cursor:pointer;
+    border-right:1px solid var(--border);
+    transition:all .12s;
+  }
+  .seg button:last-child{border-right:none}
+  .seg button:hover{color:var(--text);background:#1c242b}
+  .seg button.active{
+    color:var(--bg);
+    background:var(--amber);
+    font-weight:600;
+  }
+
+  .btn{
+    width:100%;
+    background:transparent;
+    border:1px solid var(--cyan);
+    color:var(--cyan);
+    padding:12px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;letter-spacing:.15em;
+    text-transform:uppercase;
+    cursor:pointer;
+    transition:all .15s;
+    position:relative;
+    overflow:hidden;
+  }
+  .btn:hover{
+    background:rgba(0,212,255,.08);
+    box-shadow:0 0 16px rgba(0,212,255,.25), inset 0 0 16px rgba(0,212,255,.04);
+  }
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .btn.primary{border-color:var(--amber);color:var(--amber)}
+  .btn.primary:hover{background:rgba(255,176,0,.08);box-shadow:0 0 16px rgba(255,176,0,.25)}
+
+  .sep-label{
+    display:flex;align-items:center;gap:10px;margin:20px 0 12px;
+  }
+  .sep-label::before,.sep-label::after{
+    content:"";flex:1;height:1px;background:var(--border);
+  }
+  .sep-label span{
+    font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dim);
+    letter-spacing:.2em;text-transform:uppercase;
+  }
+
+  /* METAR display */
+  .metar-box{
+    background:var(--bg-2);
+    border:1px solid var(--border);
+    padding:10px 12px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--green);
+    margin-top:8px;
+    min-height:32px;
+    word-break:break-all;
+    letter-spacing:.02em;
+  }
+  .metar-box.err{color:var(--red)}
+  .metar-box.empty{color:var(--text-faint)}
+
+  /* ATMOSPHERE readout */
+  .atm-grid{
+    display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;
+    background:var(--border);
+    border:1px solid var(--border);
+    margin-top:6px;
+  }
+  .atm-cell{
+    background:var(--bg-2);
+    padding:10px 12px;
+  }
+  .atm-lbl{
+    font-family:'JetBrains Mono',monospace;
+    font-size:9px;color:var(--text-dim);letter-spacing:.15em;
+    text-transform:uppercase;margin-bottom:4px;
+  }
+  .atm-val{
+    font-family:'JetBrains Mono',monospace;
+    font-size:16px;color:var(--amber);font-weight:500;
+  }
+  .atm-val small{font-size:10px;color:var(--text-dim);margin-left:4px;font-weight:400}
+
+  /* MASS SLIDER */
+  .mass-block{
+    background:var(--bg-2);
+    border:1px solid var(--border);
+    padding:14px;
+  }
+  .mass-head{
+    display:flex;justify-content:space-between;align-items:baseline;
+    margin-bottom:12px;
+  }
+  .mass-title{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;color:var(--text-dim);letter-spacing:.15em;text-transform:uppercase;
+  }
+  .mass-readout{
+    font-family:'JetBrains Mono',monospace;
+    font-size:24px;color:var(--amber);font-weight:600;
+  }
+  .mass-readout small{
+    font-size:12px;color:var(--text-dim);font-weight:400;margin-left:6px;
+  }
+  .mass-readout .lb{
+    font-size:13px;color:var(--cyan);margin-left:10px;
+  }
+  .mass-slider{
+    -webkit-appearance:none;
+    width:100%;
+    height:30px;
+    background:transparent;
+    outline:none;
+    margin:0;
+  }
+  .mass-slider::-webkit-slider-runnable-track{
+    height:4px;
+    background:linear-gradient(90deg,
+      var(--green) 0%,
+      var(--green) var(--pct-utility, 37%),
+      var(--amber) var(--pct-utility, 37%),
+      var(--amber) var(--pct-mtow, 86%),
+      var(--red) var(--pct-mtow, 86%),
+      var(--red) 100%);
+    border:1px solid var(--border);
+  }
+  .mass-slider::-moz-range-track{
+    height:4px;
+    background:linear-gradient(90deg,
+      var(--green) 0%,
+      var(--green) var(--pct-utility, 37%),
+      var(--amber) var(--pct-utility, 37%),
+      var(--amber) var(--pct-mtow, 86%),
+      var(--red) var(--pct-mtow, 86%),
+      var(--red) 100%);
+    border:1px solid var(--border);
+  }
+  .mass-slider::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:16px;height:24px;
+    background:var(--amber);
+    border:1px solid var(--bg);
+    cursor:pointer;
+    margin-top:-11px;
+    box-shadow:0 0 8px rgba(255,176,0,.5);
+  }
+  .mass-slider::-moz-range-thumb{
+    width:16px;height:24px;
+    background:var(--amber);
+    border:1px solid var(--bg);
+    cursor:pointer;
+    box-shadow:0 0 8px rgba(255,176,0,.5);
+    border-radius:0;
+  }
+  .mass-ticks{
+    display:flex;justify-content:space-between;
+    font-family:'JetBrains Mono',monospace;
+    font-size:9px;color:var(--text-faint);
+    letter-spacing:.05em;
+    margin-top:2px;padding:0 6px;
+  }
+  .mass-input-row{
+    display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;
+  }
+  .mass-input-row .inp{padding:8px 10px;font-size:13px}
+  .mass-quick{
+    display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;
+  }
+  .mass-quick button{
+    flex:1;min-width:76px;
+    background:transparent;
+    border:1px solid var(--border);
+    color:var(--text-dim);
+    padding:6px 8px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    letter-spacing:.05em;
+    cursor:pointer;
+    text-transform:none;
+    transition:all .12s;
+  }
+  .mass-quick button:hover{border-color:var(--amber);color:var(--amber)}
+  .mass-quick button.warn{border-color:var(--red);color:var(--red)}
+  .mass-quick button.warn:hover{background:rgba(255,74,74,.08)}
+  .mass-status{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;margin-top:10px;
+    letter-spacing:.05em;
+  }
+  .mass-status.ok{color:var(--green)}
+  .mass-status.warn{color:var(--warn)}
+  .mass-status.ovr{color:var(--red)}
+
+  /* RESULTS */
+  .phase{
+    margin-bottom:18px;
+    border:1px solid var(--border);
+    background:var(--bg-2);
+  }
+  .phase-header{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:10px 14px;
+    background:linear-gradient(90deg, rgba(0,212,255,.06), transparent);
+    border-bottom:1px solid var(--border);
+  }
+  .phase-title{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;color:var(--cyan);letter-spacing:.2em;text-transform:uppercase;
+    font-weight:500;
+  }
+  .phase-tag{
+    font-family:'JetBrains Mono',monospace;
+    font-size:9px;color:var(--text-faint);letter-spacing:.1em;
+  }
+  .phase-body{padding:0}
+  .rslt{
+    display:grid;grid-template-columns:1fr auto;
+    gap:14px;align-items:center;
+    padding:10px 14px;
+    border-bottom:1px solid var(--border);
+  }
+  .rslt:last-child{border-bottom:none}
+  .rslt-name{
+    font-size:13px;color:var(--text);font-weight:500;
+  }
+  .rslt-src{
+    font-family:'JetBrains Mono',monospace;
+    font-size:9px;color:var(--text-faint);
+    letter-spacing:.08em;text-transform:uppercase;
+    margin-top:2px;
+  }
+  .rslt-val{
+    font-family:'JetBrains Mono',monospace;
+    font-size:22px;font-weight:500;
+    color:var(--amber);
+    text-align:right;
+    white-space:nowrap;
+  }
+  .rslt-val small{font-size:11px;color:var(--text-dim);margin-left:6px;font-weight:400}
+  .rslt-val.err{color:var(--red)}
+
+  /* Flight stats bar */
+  .flight-stats{
+    display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;
+    background:var(--border);
+    border-top:1px solid var(--border);
+  }
+  .flight-stats .fs-cell{
+    background:rgba(94,255,158,0.03);
+    padding:8px 10px;
+    text-align:center;
+  }
+  .flight-stats .fs-lbl{
+    font-family:'JetBrains Mono',monospace;
+    font-size:9px;color:var(--text-dim);
+    letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px;
+  }
+  .flight-stats .fs-val{
+    font-family:'JetBrains Mono',monospace;
+    font-size:15px;color:var(--green);font-weight:500;
+  }
+  .flight-stats .fs-val small{font-size:9px;color:var(--text-dim);margin-left:3px;font-weight:400}
+  .flight-stats .fs-val.faint{color:var(--text-faint)}
+
+  .foreflight-block{
+    margin-top:20px;
+    border:1px solid var(--amber);
+    background:rgba(255,176,0,.02);
+    padding:14px;
+  }
+  .ff-title{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;color:var(--amber);letter-spacing:.2em;
+    text-transform:uppercase;margin-bottom:10px;
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  .ff-copy-btn{
+    background:transparent;border:1px solid var(--amber-dim);color:var(--amber);
+    padding:4px 10px;font-family:'JetBrains Mono',monospace;font-size:10px;
+    letter-spacing:.1em;cursor:pointer;text-transform:uppercase;
+  }
+  .ff-copy-btn:hover{background:rgba(255,176,0,.1)}
+  .ff-copy-btn.ok{border-color:var(--green);color:var(--green)}
+  .ff-grid{
+    display:grid;grid-template-columns:repeat(8,1fr);gap:1px;
+    background:var(--border);
+    border:1px solid var(--border);
+  }
+  @media (max-width:800px){.ff-grid{grid-template-columns:repeat(4,1fr)}}
+  .ff-cell{
+    background:var(--bg-2);
+    padding:8px 6px;text-align:center;
+  }
+  .ff-cell-lbl{
+    font-family:'JetBrains Mono',monospace;
+    font-size:8px;color:var(--text-dim);
+    letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px;
+  }
+  .ff-cell-val{
+    font-family:'JetBrains Mono',monospace;
+    font-size:14px;color:var(--amber);font-weight:600;
+  }
+
+  /* WARN banner */
+  .warn-banner{
+    background:rgba(255,140,58,.06);
+    border-left:3px solid var(--warn);
+    padding:10px 14px;
+    margin-top:16px;
+    font-size:12px;
+    color:var(--text-dim);
+    line-height:1.5;
+  }
+  .warn-banner b{color:var(--warn)}
+
+  /* SOURCE REF */
+  .source-strip{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;color:var(--text-faint);
+    letter-spacing:.05em;
+    padding:10px 0;
+    margin-top:12px;
+    border-top:1px solid var(--border);
+    text-align:center;
+  }
+  .source-strip b{color:var(--text-dim)}
+
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-track{background:var(--bg)}
+  ::-webkit-scrollbar-thumb{background:var(--border-lit)}
+  ::-webkit-scrollbar-thumb:hover{background:var(--amber-dim)}
+
+  @keyframes flash{
+    0%{background:rgba(255,176,0,.2)}
+    100%{background:transparent}
+  }
+  .flash{animation:flash .6s ease-out}
+
+  details summary{
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;
+    cursor:pointer;padding:8px 0;border-top:1px solid var(--border);
+    margin-top:12px;
+  }
+  details[open] summary{color:var(--cyan)}
+  details .det-body{
+    padding:10px 4px;font-size:11px;color:var(--text-dim);line-height:1.6;
+    font-family:'JetBrains Mono',monospace;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark">DA-40</div>
+    <div>
+      <div class="brand-title">Performance Calculator</div>
+      <div class="brand-sub">DIAMOND DA40 · IO-360-M1A · G1000 NXi</div>
+    </div>
+  </div>
+  <div class="topbar-meta">
+    <span>AFM <b>6.01.01-E</b></span>
+    <span>REV <b>10</b></span>
+    <span>SEC <b>5.3</b></span>
+    <span style="color:var(--green)">BUILD <b>v5.9</b></span>
+  </div>
+</div>
+
+<div class="wrap">
+<div class="grid">
+
+  <!-- ======= INPUT PANEL ======= -->
+  <section class="panel">
+    <div class="panel-header">
+      <h2>⟶ ATMOSPHERIC INPUT</h2>
+      <span class="tag">STEP 01</span>
+    </div>
+    <div class="panel-body">
+
+      <div class="sep-label"><span>Source · METAR</span></div>
+      <div class="field">
+        <div class="field-label">
+          Paste raw METAR
+          <span class="hint">from ForeFlight / AWC / SkyVector · auto-parses</span>
+        </div>
+        <textarea id="metarPaste" class="inp mono" rows="2"
+          placeholder="KPVU 212254Z AUTO 18015G22KT 10SM CLR 22/M08 A2998 RMK AO2"
+          style="resize:vertical;font-size:12px;line-height:1.4"></textarea>
+      </div>
+      <div class="row">
+        <div class="field" style="margin:0">
+          <div class="field-label">ICAO <span class="hint">auto-fetch</span></div>
+          <input id="icao" class="inp mono" placeholder="KPVU" maxlength="4" style="text-transform:uppercase" value="KPVU" />
+        </div>
+        <div class="field" style="margin:0;align-self:end">
+          <button class="btn" id="fetchMetar">FETCH via CORS proxy</button>
+        </div>
+      </div>
+      <div class="metar-box empty" id="metarOut">— paste METAR above, or fetch by ICAO —</div>
+
+      <div class="sep-label"><span>Or · Manual Entry</span></div>
+      <div class="row">
+        <div class="field" style="margin:0">
+          <div class="field-label">Field Elev <span class="hint">ft</span></div>
+          <input id="elev" class="inp mono" type="number" value="4497" step="1" />
+        </div>
+        <div class="field" style="margin:0">
+          <div class="field-label">Altimeter <span class="hint">inHg</span></div>
+          <input id="altim" class="inp mono" type="number" value="29.92" step="0.01" />
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div class="field" style="margin:0">
+          <div class="field-label">OAT at Field
+            <span class="seg" style="height:20px;width:auto">
+              <button type="button" id="unitC" class="active" data-unit="C" style="font-size:9px;padding:2px 8px">°C</button>
+              <button type="button" id="unitF" data-unit="F" style="font-size:9px;padding:2px 8px">°F</button>
+            </span>
+          </div>
+          <input id="oat" class="inp mono" type="number" value="15" step="0.1" />
+        </div>
+        <div class="field" style="margin:0">
+          <div class="field-label">Wind <span class="hint">ddd/ss[Gss]</span></div>
+          <input id="wind" class="inp mono" placeholder="270/10" />
+        </div>
+      </div>
+
+      <div class="sep-label"><span>Cruise Plan</span></div>
+      <div class="row">
+        <div class="field" style="margin:0">
+          <div class="field-label">Cruise Alt <span class="hint">MSL · ft</span></div>
+          <input id="cruiseAlt" class="inp mono" type="number" value="8500" step="500" />
+        </div>
+        <div class="field" style="margin:0">
+          <div class="field-label">Course/Track <span class="hint">° true</span></div>
+          <input id="course" class="inp mono" type="number" placeholder="090" min="0" max="360" />
+        </div>
+      </div>
+
+      <div class="sep-label"><span>Computed Atmosphere</span></div>
+      <div class="atm-grid">
+        <div class="atm-cell">
+          <div class="atm-lbl">Field PA</div>
+          <div class="atm-val" id="paOut">—<small>ft</small></div>
+        </div>
+        <div class="atm-cell">
+          <div class="atm-lbl">Field DA</div>
+          <div class="atm-val" id="daOut">—<small>ft</small></div>
+        </div>
+        <div class="atm-cell">
+          <div class="atm-lbl">ISA Dev</div>
+          <div class="atm-val" id="isaOut">—<small>°C</small></div>
+        </div>
+      </div>
+      <div class="atm-grid" style="margin-top:1px">
+        <div class="atm-cell">
+          <div class="atm-lbl">Cruise PA</div>
+          <div class="atm-val" id="cruisePAOut" style="color:var(--cyan)">—<small>ft</small></div>
+        </div>
+        <div class="atm-cell">
+          <div class="atm-lbl">Cruise DA</div>
+          <div class="atm-val" id="cruiseDAOut" style="color:var(--cyan)">—<small>ft</small></div>
+        </div>
+        <div class="atm-cell">
+          <div class="atm-lbl">Cruise OAT</div>
+          <div class="atm-val" id="cruiseOATOut" style="color:var(--cyan)">—<small>°C</small></div>
+        </div>
+      </div>
+      <div class="atm-grid" style="margin-top:1px;grid-template-columns:1fr 1fr">
+        <div class="atm-cell">
+          <div class="atm-lbl">Head/Tail</div>
+          <div class="atm-val" id="hwOut" style="color:var(--green)">—<small>kt</small></div>
+        </div>
+        <div class="atm-cell">
+          <div class="atm-lbl">Crosswind</div>
+          <div class="atm-val" id="xwOut" style="color:var(--green)">—<small>kt</small></div>
+        </div>
+      </div>
+
+      <!-- FLIGHT CONFIG -->
+      <div class="sep-label"><span>Aircraft Mass</span></div>
+      <div class="mass-block">
+        <div class="mass-head">
+          <div class="mass-title">Flight Mass</div>
+          <div class="mass-readout">
+            <span id="massKg">1050</span><small>kg</small>
+            <span class="lb"><span id="massLb">2315</span> lb</span>
+          </div>
+        </div>
+        <input type="range" id="massSlider" class="mass-slider"
+               min="850" max="1200" step="5" value="1050" />
+        <div class="mass-ticks">
+          <span>850</span><span>900</span><span>950</span>
+          <span>1000</span><span>1050</span><span>1100</span>
+          <span>1150↑</span><span>1200</span>
+        </div>
+        <div class="mass-input-row">
+          <div>
+            <div class="field-label" style="margin:0 0 4px;font-size:9px">kg</div>
+            <input id="massKgInp" class="inp mono" type="number"
+                   min="600" max="1200" step="1" value="1050" />
+          </div>
+          <div>
+            <div class="field-label" style="margin:0 0 4px;font-size:9px">lb</div>
+            <input id="massLbInp" class="inp mono" type="number"
+                   min="1323" max="2646" step="1" value="2315" />
+          </div>
+        </div>
+        <div class="mass-quick">
+          <button type="button" data-mkg="850">Utility 850</button>
+          <button type="button" data-mkg="980">Util MAX 980</button>
+          <button type="button" data-mkg="1150">Normal MTOW 1150</button>
+          <button type="button" class="warn" data-mkg="1200">MÄM 1200</button>
+        </div>
+        <div class="mass-status ok" id="massStatus">✓ Normal Category · within Utility</div>
+      </div>
+
+      <div class="sep-label"><span>Flight Profile</span></div>
+      <div class="field">
+        <div class="field-label">Climb Mode</div>
+        <div class="seg" id="climbSeg">
+          <button data-climb="takeoff" type="button">Take-off Climb (Flaps T/O)</button>
+          <button data-climb="cruise"  type="button" class="active">Cruise Climb (Flaps UP)</button>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <div class="field-label">Cruise % Power</div>
+          <div class="seg" id="pwrSeg" style="margin-bottom:0">
+            <button data-pwr="45" type="button">45</button>
+            <button data-pwr="55" type="button" class="active">55</button>
+            <button data-pwr="65" type="button">65</button>
+            <button data-pwr="75" type="button">75</button>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-label">Cruise RPM</div>
+          <select id="rpmSel" class="sel">
+            <option value="1800">1800</option>
+            <option value="2000">2000</option>
+            <option value="2200">2200</option>
+            <option value="2400" selected>2400</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field" style="margin:0">
+          <div class="field-label">Mixture</div>
+          <div class="seg" id="mixSeg" style="margin-bottom:0">
+            <button data-mix="econ" type="button" class="active">Best Econ</button>
+            <button data-mix="pwr"  type="button">Best Power</button>
+          </div>
+        </div>
+        <div class="field" style="margin:0">
+          <div class="field-label">Glidepath <span class="hint">° (3.0 ILS std)</span></div>
+          <input id="glidepath" class="inp mono" type="number" value="3.0" step="0.1" min="1.0" max="6.0" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field" style="margin:0">
+          <div class="field-label">
+            Descent Speed
+            <span class="seg" style="height:20px;width:auto">
+              <button type="button" id="descModeIAS" class="active" data-mode="IAS" style="font-size:9px;padding:2px 8px">IAS</button>
+              <button type="button" id="descModeTAS" data-mode="TAS" style="font-size:9px;padding:2px 8px">TAS</button>
+            </span>
+          </div>
+          <input id="descIAS" class="inp mono" type="number" value="100" step="5" />
+        </div>
+        <div class="field" style="margin:0">
+          <div class="field-label">Descent FF <span class="hint">gph</span></div>
+          <input id="descFF" class="inp mono" type="number" value="5.0" step="0.5" />
+        </div>
+      </div>
+
+      <details>
+        <summary>▸ Data sources & interpolation methods</summary>
+        <div class="det-body">
+          • <b>5.3.2 Engine Performance</b> · full MP + FF table transcribed literally<br>
+          • <b>5.3.1 IAS/CAS</b> · digitized from chart Flaps UP/T/O/LDG curves<br>
+          • <b>5.3.7 Take-off Climb</b> · chart digitized at PA 0/2k/4k/6k/8k/10k + OAT grid<br>
+          • <b>5.3.8 Cruise Climb</b> · chart digitized same grid<br>
+          • <b>5.3.9 Cruising TAS</b> · chart digitized at DA 0/2/4/6/8/10k × Power%<br>
+          • <b>Mass scaling</b> · linear from chart mass-correction nomograph<br>
+          • <b>ISA temp correction</b> · ±3% per ±15°C (AFM 5.3.2 note)<br>
+          • <b>Density alt</b> · σ = (1−6.876e-6·DA)^4.2561<br>
+          Bilinear interpolation between grid points.
+        </div>
+      </details>
+
+      <div class="source-strip">
+        Source · <b>DA 40-180 AFM Doc. # 6.01.01-E Rev. 10</b> · 18-Sep-2023
+      </div>
+    </div>
+  </section>
+
+  <!-- ======= OUTPUT PANEL ======= -->
+  <section class="panel">
+    <div class="panel-header">
+      <h2>⟶ PERFORMANCE OUTPUT</h2>
+      <span class="tag">STEP 02</span>
+    </div>
+    <div class="panel-body">
+
+      <div class="phase">
+        <div class="phase-header">
+          <div class="phase-title">◀ CLIMB</div>
+          <div class="phase-tag" id="climbTag">CRUISE CLIMB · 73 KIAS · Flaps UP</div>
+        </div>
+        <div class="phase-body">
+          <div class="rslt">
+            <div>
+              <div class="rslt-name">Climb TAS</div>
+              <div class="rslt-src">AFM 5.3.1 · IAS→CAS→TAS</div>
+            </div>
+            <div class="rslt-val" id="climbTAS">—<small>kt</small></div>
+          </div>
+          <div class="rslt">
+            <div>
+              <div class="rslt-name">Climb Fuel Flow</div>
+              <div class="rslt-src">2400 RPM Full Throttle · sim: 13.6 @ PA 4500 anchor</div>
+            </div>
+            <div class="rslt-val" id="climbFF">—<small>gph</small></div>
+          </div>
+          <div class="rslt">
+            <div>
+              <div class="rslt-name">Climb Rate</div>
+              <div class="rslt-src">AFM 5.3.7 or 5.3.8 · at midpoint PA/OAT</div>
+            </div>
+            <div class="rslt-val" id="climbROC">—<small>fpm</small></div>
+          </div>
+          <div class="flight-stats">
+            <div class="fs-cell">
+              <div class="fs-lbl">Ground Speed</div>
+              <div class="fs-val" id="climbGS">—<small>kt</small></div>
+            </div>
+            <div class="fs-cell">
+              <div class="fs-lbl">Time to Climb</div>
+              <div class="fs-val" id="climbTime">—<small>min</small></div>
+            </div>
+            <div class="fs-cell">
+              <div class="fs-lbl">Distance</div>
+              <div class="fs-val" id="climbDist">—<small>NM</small></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="phase-header">
+          <div class="phase-title">◀ CRUISE</div>
+          <div class="phase-tag" id="cruiseTag">55% · 2400 RPM · Best Econ</div>
+        </div>
+        <div class="phase-body">
+          <div class="rslt">
+            <div>
+              <div class="rslt-name">Cruise TAS</div>
+              <div class="rslt-src">AFM 5.3.9 · at cruise DA</div>
+            </div>
+            <div class="rslt-val" id="cruTAS">—<small>kt</small></div>
+          </div>
+          <div class="rslt">
+            <div>
+              <div class="rslt-name">Cruise Fuel Flow</div>
+              <div class="rslt-src">AFM 5.3.2 · ISA temp corrected</div>
+            </div>
+            <div class="rslt-val" id="cruFF">—<small>gph</small></div>
+          </div>
+          <div class="rslt">
+            <div>
+              <div class="rslt-name">Manifold Pressure</div>
+              <div class="rslt-src">AFM 5.3.2 · at cruise PA</div>
+            </div>
+            <div class="rslt-val" id="cruMP">—<small>inHg</small></div>
+          </div>
+          <div class="flight-stats">
+            <div class="fs-cell" style="grid-column:span 3">
+              <div class="fs-lbl">Ground Speed</div>
+              <div class="fs-val" id="cruGS">—<small>kt</small></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="phase-header">
+          <div class="phase-title">◀ DESCENT</div>
+          <div class="phase-tag" id="descTag">Flaps UP · 3.0° glidepath · cruise → field</div>
+        </div>
+        <div class="phase-body">
+          <div class="rslt">
+            <div>
+              <div class="rslt-name">Descent TAS</div>
+              <div class="rslt-src" id="desTASSrc">AFM 5.3.1 · at midpoint DA</div>
+            </div>
+            <div class="rslt-val" id="desTAS">—<small>kt</small></div>
+          </div>
+          <div class="rslt">
+            <div>
+              <div class="rslt-name">Descent Fuel Flow</div>
+              <div class="rslt-src">User input · low cruise / partial throttle</div>
+            </div>
+            <div class="rslt-val" id="desFF">—<small>gph</small></div>
+          </div>
+          <div class="rslt">
+            <div>
+              <div class="rslt-name">Descent Rate</div>
+              <div class="rslt-src" id="descRateSrc">ROD = GS × (6076.12/60) × tan(γ) · γ=3.0°</div>
+            </div>
+            <div class="rslt-val" id="desROC">—<small>fpm</small></div>
+          </div>
+          <div class="flight-stats">
+            <div class="fs-cell">
+              <div class="fs-lbl">Ground Speed</div>
+              <div class="fs-val" id="desGS">—<small>kt</small></div>
+            </div>
+            <div class="fs-cell">
+              <div class="fs-lbl">Time to Descend</div>
+              <div class="fs-val" id="desTime">—<small>min</small></div>
+            </div>
+            <div class="fs-cell">
+              <div class="fs-lbl">TOD from Field</div>
+              <div class="fs-val" id="desDist">—<small>NM</small></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="phase-header">
+          <div class="phase-title">◀ TAKE-OFF DISTANCE</div>
+          <div class="phase-tag" id="toTag">MAX PWR · 2700 RPM · Flaps T/O · paved dry</div>
+        </div>
+        <div class="phase-body">
+          <div class="rslt">
+            <div>
+              <div class="rslt-name">Ground Roll</div>
+              <div class="rslt-src">AFM 5.3.6 · at field PA/OAT · mass + wind corrected</div>
+            </div>
+            <div class="rslt-val" id="toGround">—<small>ft</small></div>
+          </div>
+          <div class="rslt">
+            <div>
+              <div class="rslt-name">50 ft Obstacle</div>
+              <div class="rslt-src">AFM 5.3.6 · ground roll × 1.77</div>
+            </div>
+            <div class="rslt-val" id="toObs">—<small>ft</small></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="phase-header">
+          <div class="phase-title">◀ LANDING DISTANCE</div>
+          <div class="phase-tag">
+            IDLE · HIGH RPM · paved dry
+            <span class="seg" style="height:18px;width:auto;display:inline-flex;margin-left:6px;vertical-align:middle">
+              <button type="button" id="ldgFlapsLDG" class="active" data-flaps="LDG" style="font-size:9px;padding:2px 6px">Flaps LDG</button>
+              <button type="button" id="ldgFlapsUP" data-flaps="UP" style="font-size:9px;padding:2px 6px">Flaps UP</button>
+            </span>
+          </div>
+        </div>
+        <div class="phase-body">
+          <div class="rslt">
+            <div>
+              <div class="rslt-name">Ground Roll</div>
+              <div class="rslt-src" id="ldgRollSrc">AFM 5.3.10 · at field PA/OAT · mass + wind corrected</div>
+            </div>
+            <div class="rslt-val" id="ldgGround">—<small>ft</small></div>
+          </div>
+          <div class="rslt">
+            <div>
+              <div class="rslt-name">50 ft Obstacle</div>
+              <div class="rslt-src" id="ldgObsSrc">AFM 5.3.10 · ground roll × 2.13</div>
+            </div>
+            <div class="rslt-val" id="ldgObs">—<small>ft</small></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="foreflight-block">
+        <div class="ff-title">
+          <span>▸ FOREFLIGHT PERFORMANCE PROFILE</span>
+          <button class="ff-copy-btn" id="copyFF">COPY</button>
+        </div>
+        <div class="ff-grid">
+          <div class="ff-cell"><div class="ff-cell-lbl">Clb TAS</div><div class="ff-cell-val" id="ff-cTAS">—</div></div>
+          <div class="ff-cell"><div class="ff-cell-lbl">Clb FF</div><div class="ff-cell-val" id="ff-cFF">—</div></div>
+          <div class="ff-cell"><div class="ff-cell-lbl">Clb FPM</div><div class="ff-cell-val" id="ff-cROC">—</div></div>
+          <div class="ff-cell"><div class="ff-cell-lbl">Crz TAS</div><div class="ff-cell-val" id="ff-crzTAS">—</div></div>
+          <div class="ff-cell"><div class="ff-cell-lbl">Crz FF</div><div class="ff-cell-val" id="ff-crzFF">—</div></div>
+          <div class="ff-cell"><div class="ff-cell-lbl">Des TAS</div><div class="ff-cell-val" id="ff-dTAS">—</div></div>
+          <div class="ff-cell"><div class="ff-cell-lbl">Des FF</div><div class="ff-cell-val" id="ff-dFF">—</div></div>
+          <div class="ff-cell"><div class="ff-cell-lbl">Des FPM</div><div class="ff-cell-val" id="ff-dROC">—</div></div>
+        </div>
+      </div>
+
+      <div class="warn-banner">
+        <b>⚠ Planning reference only.</b> Bilinear chart interpolation; always cross-check with the AFM chart in the aircraft before flight. Performance assumes good aircraft/engine condition and ISA deviations within ±30°C. Wheel fairings assumed installed (−5% TAS if removed per AFM 5.3.9 caution).
+      </div>
+
+    </div>
+  </section>
+
+</div>
+</div>
+
+<script>
+/* ===========================================================================
+   DA40-180 Performance Calculator
+   Source: AFM Doc. # 6.01.01-E Rev. 10 (18-Sep-2023)
+   IO-360-M1A · MTV-12-B/180-17(f) 3-blade CS propeller
+   =========================================================================== */
+
+/* =========================================================
+   §5.3.2 ENGINE PERFORMANCE TABLE  ·  Manifold Pressure (inHg)
+   By Power% × RPM × Pressure Altitude (MSL → 17,000 ft, 1000 ft steps)
+   ========================================================= */
+const ENGINE_MP = {
+  45: {
+    1800:[22.7,22.4,22.1,21.8,21.5,21.2,20.9,20.5,20.2,19.9,19.6,19.3,null,null,null,null,null,null],
+    2000:[21.3,21.0,20.7,20.4,20.2,19.9,19.6,19.3,19.0,18.7,18.4,18.2,17.9,17.6,null,null,null,null],
+    2200:[20.2,19.9,19.6,19.3,19.0,18.7,18.4,18.2,17.9,17.6,17.3,17.0,16.7,16.4,16.1,15.8,15.5,null],
+    2400:[19.0,18.7,18.4,18.2,17.9,17.6,17.4,17.1,16.9,16.6,16.3,16.1,15.8,15.5,15.3,15.0,14.7,14.5],
+  },
+  55: {
+    2000:[23.9,23.6,23.3,23.0,22.7,22.3,22.0,21.7,21.3,21.1,null,null,null,null,null,null,null,null],
+    2200:[22.4,22.2,21.9,21.6,21.2,20.9,20.6,20.3,20.0,19.7,19.4,19.1,17.8,17.6,null,null,null,null],
+    2400:[21.2,21.0,20.7,20.4,20.1,19.8,19.5,19.3,19.0,18.7,18.4,18.1,17.8,17.6,null,null,null,null],
+  },
+  65: {
+    2000:[26.8,26.4,26.0,25.7,25.4,null,null,null,null,null,null,null,null,null,null,null,null,null],
+    2200:[24.9,24.5,24.2,23.8,23.5,23.1,22.8,22.4,null,null,null,null,null,null,null,null,null,null],
+    2400:[23.4,23.2,22.9,22.6,22.3,22.0,21.7,21.4,21.0,20.7,null,null,null,null,null,null,null,null],
+  },
+  75: {
+    2200:[27.3,26.8,26.5,26.1,null,null,null,null,null,null,null,null,null,null,null,null,null,null],
+    2400:[25.8,25.5,25.2,24.8,24.5,24.1,null,null,null,null,null,null,null,null,null,null,null,null],
+  },
+};
+
+/* Fuel flow (US gal/hr) by Power% × RPM × Mixture (econ | pwr) */
+const ENGINE_FF = {
+  45: { 1800:{econ:5.8,pwr:null}, 2000:{econ:6.0,pwr:null}, 2200:{econ:6.3,pwr:7.3}, 2400:{econ:6.6,pwr:7.7} },
+  55: { 2000:{econ:7.0,pwr:null}, 2200:{econ:7.2,pwr:8.5}, 2400:{econ:7.5,pwr:8.7} },
+  65: { 2000:{econ:7.9,pwr:null}, 2200:{econ:8.2,pwr:9.5}, 2400:{econ:8.5,pwr:9.8} },
+  75: { 2200:{econ:9.2,pwr:10.7}, 2400:{econ:9.5,pwr:11.0} },
+};
+
+/* =========================================================
+   §5.3.1 AIRSPEED CALIBRATION · KIAS → KCAS
+   Digitized from chart (Rev 10, page 5-4)
+   ========================================================= */
+const IAS_CAS = {
+  UP:  [[48,55],[55,60],[60,65],[65,68],[70,70],[80,78],[90,89],[100,98],
+        [110,108],[120,119],[130,130],[140,140],[150,150],[160,158],
+        [170,168],[178,174]],
+  TO:  [[44,55],[48,56],[55,60],[60,63],[70,68],[80,78],[90,88],[100,98],[108,108]],
+  LDG: [[42,55],[46,57],[52,60],[60,64],[70,68],[80,77],[90,88],[91,91]],
+};
+function interp1D(pairs, x){
+  if (x <= pairs[0][0]) return pairs[0][1];
+  if (x >= pairs[pairs.length-1][0]) return pairs[pairs.length-1][1];
+  for (let i=0; i<pairs.length-1; i++){
+    const [x0,y0]=pairs[i], [x1,y1]=pairs[i+1];
+    if (x >= x0 && x <= x1) return y0 + (y1-y0)*(x-x0)/(x1-x0);
+  }
+  return pairs[pairs.length-1][1];
+}
+function iasToCas(ias, flaps='UP'){
+  return interp1D(IAS_CAS[flaps], ias);
+}
+
+/* =========================================================
+   §5.3.7 CLIMB PERFORMANCE - TAKE-OFF CLIMB (Flaps T/O, 2400 RPM, MAX PWR)
+   Digitized from chart (Rev 10, page 5-15). ROC in fpm.
+   Reference mass = 1000 kg. Grid: PA (ft) × OAT (°C)
+   Example anchor: PA=0, OAT=15, 1000 kg → 1160 fpm ✓
+   ========================================================= */
+const ROC_PA = [0, 2000, 4000, 6000, 8000, 10000];
+const ROC_OAT = [-20, 0, 15, 30, 45];  // °C
+const ROC_TAKEOFF_1000KG = [
+  // OAT:   -20    0    15    30    45
+  /* PA 0 */    [1410, 1290, 1160, 1050,  920],
+  /* PA 2k */   [1280, 1140, 1020,  900,  760],
+  /* PA 4k */   [1130,  990,  870,  740,  610],
+  /* PA 6k */   [ 970,  830,  720,  590,  460],
+  /* PA 8k */   [ 810,  680,  570,  440,  310],
+  /* PA 10k */  [ 680,  550,  440,  300,  160],
+];
+
+/* §5.3.8 CRUISE CLIMB (Flaps UP, 2400 RPM, MAX PWR)
+   Example anchor: PA=0, OAT=15, 1000 kg → 1050 fpm ✓ */
+const ROC_CRUISE_1000KG = [
+  /* PA 0 */    [1290, 1170, 1050,  940,  820],
+  /* PA 2k */   [1160, 1030,  910,  790,  660],
+  /* PA 4k */   [1010,  880,  760,  640,  510],
+  /* PA 6k */   [ 860,  740,  620,  490,  360],
+  /* PA 8k */   [ 710,  590,  480,  350,  220],
+  /* PA 10k */  [ 570,  460,  340,  210,   80],
+];
+
+function bilinear2D(xs, ys, grid, x, y){
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const xc = clamp(x, xs[0], xs[xs.length-1]);
+  const yc = clamp(y, ys[0], ys[ys.length-1]);
+  let i=0; while(i<xs.length-2 && xc > xs[i+1]) i++;
+  let j=0; while(j<ys.length-2 && yc > ys[j+1]) j++;
+  const tx = (xc-xs[i])/(xs[i+1]-xs[i]);
+  const ty = (yc-ys[j])/(ys[j+1]-ys[j]);
+  const v00 = grid[i][j],   v10 = grid[i+1][j];
+  const v01 = grid[i][j+1], v11 = grid[i+1][j+1];
+  return (1-tx)*(1-ty)*v00 + tx*(1-ty)*v10 + (1-tx)*ty*v01 + tx*ty*v11;
+}
+
+/* Mass correction (from chart nomograph, right side):
+   ~ -1.6 fpm per kg above 1000 kg baseline,
+   ~ +1.8 fpm per kg below 1000 kg.
+   Linearization calibrated to chart example traces. */
+function massCorrection(massKg){
+  const dm = massKg - 1000;
+  return dm > 0 ? -1.6 * dm : -1.8 * dm;
+}
+
+/* =========================================================
+   §5.3.9 CRUISING TRUE AIRSPEED
+   Digitized from chart (Rev 10, page 5-18).
+   Indexed by Density Altitude (ft) × Power%.
+   Example anchor: PA=5000, OAT=15°C (DA≈6500 ft), 55% → 118 KTAS ✓
+   ========================================================= */
+const TAS_DA = [0, 2000, 4000, 6000, 8000, 10000, 12000, 14000];
+const TAS_TABLE = {
+  //         DA:  0    2k   4k   6k   8k  10k  12k  14k
+  45: [101, 105, 109, 113, 116, 118, 118, 117],
+  55: [114, 116, 117, 118, 119, 121, 120,  null],
+  65: [125, 127, 130, 131, 130, 127, null, null],
+  75: [134, 136, 138, 137, 131, null, null, null],
+};
+function lookupCruiseTAS(pwr, daFt){
+  const arr = TAS_TABLE[pwr];
+  if (!arr) return null;
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const da = clamp(daFt, TAS_DA[0], TAS_DA[TAS_DA.length-1]);
+  let i=0; while(i<TAS_DA.length-2 && da > TAS_DA[i+1]) i++;
+  const t = (da - TAS_DA[i])/(TAS_DA[i+1]-TAS_DA[i]);
+  const v0 = arr[i], v1 = arr[i+1];
+  if (v0==null && v1==null) return null;
+  if (v0==null) return v1;
+  if (v1==null) return v0;
+  return v0 + (v1-v0)*t;
+}
+
+/* =========================================================
+   §5.3.6 TAKE-OFF DISTANCE
+   Conditions: MAX PWR, 2700 RPM, Flaps T/O, dry hard runway
+   Reference: 1000 kg, 0 kt wind, 0 ft obstacle (ground roll)
+   Digitized from chart (Rev 10, page 5-13).
+   AFM example: PA 2000, 15°C, 1000 kg, HW 10 kt
+                → ground 558 ft, 50ft obs 985 ft ✓
+   ========================================================= */
+const TO_LDG_PA = [0, 2000, 4000, 6000, 8000, 10000];
+const TO_LDG_OAT = [-20, 0, 15, 30, 45];
+
+// Take-off ground roll (ft) at 1000 kg, 0 kt wind
+const TO_GROUND_ROLL = [
+  // OAT:  -20    0    15    30    45
+  /*  0 */ [ 480, 580,  680,  790,  920],
+  /*  2 */ [ 555, 670,  790,  920, 1075],
+  /*  4 */ [ 645, 780,  920, 1080, 1265],
+  /*  6 */ [ 750, 910, 1080, 1280, 1500],
+  /*  8 */ [ 880,1075, 1290, 1530, 1810],
+  /* 10 */ [1050,1290, 1550, 1850, 2210],
+];
+
+/* §5.3.10 LANDING DISTANCE - FLAPS LDG
+   Conditions: IDLE, HIGH RPM, Flaps LDG
+   Reference: 1000 kg, 0 kt wind
+   AFM example: PA 2000, 15°C, 1000 kg, HW 10 kt
+                → ground 624 ft, 50ft obs 1329 ft ✓ (calibrated) */
+const LDG_FLAPS_LDG_GROUND = [
+  [ 630,  730,  825,  925, 1020],
+  [ 675,  785,  890,  990, 1095],
+  [ 725,  840,  950, 1060, 1175],
+  [ 775,  900, 1025, 1145, 1265],
+  [ 835,  970, 1095, 1225, 1360],
+  [ 895, 1040, 1175, 1320, 1460],
+];
+
+/* §5.3.11 LANDING DISTANCE - FLAPS UP
+   Conditions: IDLE, HIGH RPM, Flaps UP
+   AFM example: PA 4000, 8°C, 1000 kg, HW 8 kt
+                → ground 886 ft, 50ft obs 1903 ft ✓ (calibrated) */
+const LDG_FLAPS_UP_GROUND = [
+  [ 815,  945, 1065, 1195, 1315],
+  [ 875, 1015, 1145, 1285, 1415],
+  [ 940, 1090, 1235, 1380, 1525],
+  [1010, 1170, 1325, 1490, 1650],
+  [1085, 1260, 1430, 1605, 1780],
+  [1165, 1355, 1535, 1735, 1920],
+];
+
+/* Obstacle multiplier — approximated from chart geometry, applies to
+   all three charts. Ground roll → 50 ft obstacle distance.
+   T/O chart: 985/558 = 1.766
+   LDG flaps LDG: 1329/624 = 2.130
+   LDG flaps UP: 1903/886 = 2.148                                       */
+const OBSTACLE_MULT = {
+  takeoff:    1.77,
+  landingLdg: 2.13,
+  landingUp:  2.15,
+};
+
+/* Wind correction factors (chart nomograph derived):
+   - Headwind: distance multiplier = 1 - 0.030 × HW_kt  (~3% per kt, capped 0.5)
+   - Tailwind: distance multiplier = 1 + 0.100 × TW_kt  (~10% per kt) */
+function windDistanceFactor(headwindKt){
+  if (headwindKt >= 0) return Math.max(0.5, 1 - 0.030 * headwindKt);
+  else                 return 1 + 0.100 * Math.abs(headwindKt);
+}
+
+/* Mass correction (chart nomograph):
+   T/O: ~3% per 50 kg above 1000 kg, ~2.5% below (more sensitive when heavier)
+   LDG: ~2% per 50 kg above/below 1000 kg                         */
+function massDistanceFactor(massKg, phase){
+  const dm = massKg - 1000;
+  if (phase === 'takeoff'){
+    return dm > 0 ? 1 + 0.030 * (dm/50) : 1 + 0.025 * (dm/50);
+  } else {
+    return 1 + 0.020 * (dm/50);
+  }
+}
+
+/* Compute take-off / landing distance with all corrections */
+function computeRunwayDistance(phase, paFt, oatC, massKg, headwindKt){
+  const grids = {
+    takeoff:    TO_GROUND_ROLL,
+    landingLdg: LDG_FLAPS_LDG_GROUND,
+    landingUp:  LDG_FLAPS_UP_GROUND,
+  };
+  const grid = grids[phase];
+  if (!grid) return null;
+  const groundRef = bilinear2D(TO_LDG_PA, TO_LDG_OAT, grid, paFt, oatC);
+  const wind = windDistanceFactor(headwindKt);
+  const mass = massDistanceFactor(massKg, phase);
+  const ground = groundRef * wind * mass;
+  const obstacle = ground * OBSTACLE_MULT[phase];
+  return { ground: Math.round(ground), obstacle: Math.round(obstacle), groundRef: Math.round(groundRef) };
+}
+
+/* =========================================================
+   CLIMB IAS (Flaps T/O for takeoff climb; UP for cruise climb)
+   Per AFM §4A.3.8, linearly interpolated between masses.
+   ========================================================= */
+const CLIMB_IAS_ANCHORS = {
+  takeoff: [[850,54],[1000,60],[1150,66],[1200,67]],
+  cruise:  [[850,60],[1000,68],[1150,73],[1200,76]],
+};
+function climbIAS(climbType, massKg){
+  return interp1D(CLIMB_IAS_ANCHORS[climbType], massKg);
+}
+
+/* =========================================================
+   ATMOSPHERE
+   ========================================================= */
+function pressureAltitude(elev, altim){ return elev + (29.92 - altim) * 1000; }
+function isaTempC(paFt){ return 15 - 1.98 * paFt/1000; }
+function densityAltitude(paFt, oatC){
+  return paFt + 120 * (oatC - isaTempC(paFt));
+}
+function densityRatio(daFt){
+  return Math.pow(1 - 6.875586e-6 * daFt, 4.2561);
+}
+function cas2tas(casKt, daFt){ return casKt / Math.sqrt(densityRatio(daFt)); }
+function fToC(f){ return (f-32)/1.8 }
+function cToF(c){ return c*1.8+32 }
+
+/* AFM §5.3.2 note · ±3% per ±15°C ISA dev */
+function isaPowerCorrection(isaDev){ return 1 - 0.03 * (isaDev/15); }
+
+/* Engine table lookup with PA interpolation */
+function lookupMP(pwr, rpm, paFt){
+  const arr = ENGINE_MP[pwr]?.[rpm];
+  if (!arr) return null;
+  const idx = paFt/1000;
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const i0 = Math.floor(clamp(idx, 0, arr.length-1));
+  const i1 = Math.min(i0+1, arr.length-1);
+  const v0 = arr[i0], v1 = arr[i1];
+  if (v0==null && v1==null) return null;
+  if (v0==null) return v1;
+  if (v1==null) return v0;
+  return v0 + (v1 - v0) * (idx - i0);
+}
+function lookupFF(pwr, rpm, mix){
+  return ENGINE_FF[pwr]?.[rpm]?.[mix] ?? ENGINE_FF[pwr]?.[rpm]?.econ ?? null;
+}
+
+/* Climb fuel flow — Full Throttle, RPM-aware, PA-aware.
+   Calibrated to simulator measurements at PA 4500 ft, altimeter 29.92:
+     · 2700 RPM (takeoff full-rich):  15.1 gph
+     · 2400 RPM (climb):              13.6 gph
+   Model: MSL base FF (linear in RPM) × PA decay factor (3% per 1000 ft,
+   matching § 5.3.2 Full Throttle power drop for NA Lycoming).
+   AFM § 4A.3.8 specifies 2400 RPM for both takeoff climb and cruise climb,
+   so default rpm=2400. Floor at 8.0 gph for very high altitudes. */
+function climbFuelFlow(paFt, rpm){
+  if (rpm == null) rpm = 2400;
+  const FF_2400_MSL = 15.723;          // back-calculated from 13.6 @ PA 4500
+  const FF_PER_RPM = 0.00578;          // (15.723 - 17.457) / (2400 - 2700)... slope
+  const DECAY_PER_1000 = 0.03;         // 3% Full Throttle power drop per 1000 ft
+  const mslBase = FF_2400_MSL + (rpm - 2400) * FF_PER_RPM;
+  const paFactor = Math.max(0.5, 1 - DECAY_PER_1000 * paFt / 1000);
+  return Math.max(8.0, mslBase * paFactor);
+}
+
+/* =========================================================
+   METAR PARSING
+   Parses raw METAR text for temp, altimeter, wind.
+   Example: "KPVU 212254Z AUTO 18015G22KT 10SM CLR 22/M08 A2998 RMK AO2"
+   ========================================================= */
+function parseMetar(raw){
+  if (!raw) return null;
+  const txt = raw.trim().replace(/^METAR\s+|^SPECI\s+/i, '');
+  const parsed = { raw: txt };
+
+  // ICAO: first 4 uppercase letters
+  const icao = txt.match(/^([A-Z]{4})\b/);
+  if (icao) parsed.icao = icao[1];
+
+  // Wind: DDDSSS[GGG]KT or VRBSSKT
+  const wind = txt.match(/\b(VRB|\d{3})(\d{2,3})(?:G(\d{2,3}))?(KT|MPS)\b/);
+  if (wind){
+    parsed.wdir = wind[1] === 'VRB' ? 'VRB' : parseInt(wind[1]);
+    let spd = parseInt(wind[2]);
+    if (wind[4] === 'MPS') spd = Math.round(spd * 1.944);
+    parsed.wspd = spd;
+    parsed.wgst = wind[3] ? (wind[4] === 'MPS' ? Math.round(wind[3]*1.944) : parseInt(wind[3])) : null;
+  }
+
+  // Temperature/Dewpoint: TT/DD where M prefix means negative
+  const temp = txt.match(/\b(M?\d{2})\/(M?\d{2})\b/);
+  if (temp){
+    const parseT = s => s.startsWith('M') ? -parseInt(s.slice(1)) : parseInt(s);
+    parsed.temp = parseT(temp[1]);
+    parsed.dewp = parseT(temp[2]);
+  }
+
+  // Altimeter: AXXXX (inHg×100) or QXXXX (hPa)
+  const altA = txt.match(/\bA(\d{4})\b/);
+  const altQ = txt.match(/\bQ(\d{4})\b/);
+  if (altA) parsed.altim = parseInt(altA[1])/100;          // inHg directly
+  else if (altQ) parsed.altim = parseInt(altQ[1]) * 0.02953; // hPa → inHg
+
+  // Observation time DDHHMMZ
+  const time = txt.match(/\b(\d{2})(\d{2})(\d{2})Z\b/);
+  if (time) parsed.timeZ = `${time[1]}${time[2]}${time[3]}Z`;
+
+  return parsed.icao ? parsed : null;
+}
+
+/* =========================================================
+   AIRPORT ELEVATION LOOKUP
+   Common training/operations airports. Manual fallback always available.
+   Add your home fields here as needed.
+   ========================================================= */
+const AIRPORT_ELEV = {
+  // Utah
+  KPVU: 4497, KSLC: 4227, KSGU: 2941, KOGD: 4473, KCDC: 5622,
+  KVEL: 5278, KHIF: 4789, KU34: 4166, KU42: 4607, KU77: 4557,
+  // Common Western training/destination
+  KBZN: 4473, KIDA: 4744, KJAC: 6451, KASE: 7820, KDEN: 5434,
+  KLAS: 2181, KPSP: 476,  KPHX: 1135, KABQ: 5355, KTUS: 2643,
+  KSFO: 13,   KLAX: 128,  KRNO: 4415, KBOI: 2871, KGEG: 2384,
+  KSEA: 433,  KPDX: 31,   KDFW: 607,  KIAH: 97,   KORD: 672,
+  // East coast
+  KJFK: 13,   KEWR: 18,   KBOS: 20,   KDCA: 15,   KIAD: 313,
+  KATL: 1026, KCLT: 748,  KMIA: 8,    KMCO: 96,
+  // Other
+  KLGA: 21,   KMDW: 620,  KMSP: 841,
+};
+function lookupElevation(icao){
+  return AIRPORT_ELEV[icao?.toUpperCase()] ?? null;
+}
+
+/* =========================================================
+   METAR APPLY
+   Applies parsed METAR to form fields.
+   ========================================================= */
+function applyMetar(m, source){
+  if (!m){
+    const out = document.getElementById('metarOut');
+    out.className = 'metar-box err';
+    out.textContent = '✕ Could not parse METAR — check format';
+    return false;
+  }
+  const out = document.getElementById('metarOut');
+  out.className = 'metar-box';
+  out.textContent = `[${source}] ${m.raw}`;
+
+  if (m.icao){
+    document.getElementById('icao').value = m.icao;
+    const elev = lookupElevation(m.icao);
+    if (elev != null) document.getElementById('elev').value = elev;
+  }
+  if (m.altim != null){
+    document.getElementById('altim').value = m.altim.toFixed(2);
+  }
+  if (m.temp != null){
+    const cBtn = document.getElementById('unitC');
+    if (!cBtn.classList.contains('active')) cBtn.click();
+    document.getElementById('oat').value = m.temp.toFixed(0);
+  }
+  if (m.wdir != null && m.wspd != null){
+    const g = m.wgst ? 'G'+m.wgst : '';
+    document.getElementById('wind').value = `${m.wdir === 'VRB' ? 'VRB' : String(m.wdir).padStart(3,'0')}/${m.wspd}${g}`;
+  }
+  compute();
+  return true;
+}
+
+/* =========================================================
+   METAR FETCH via parallel CORS proxy race
+   aviationweather.gov does NOT send CORS headers. We race 5
+   different public proxies in parallel and use whichever
+   responds first with valid data. This dramatically improves
+   reliability since individual proxies have varying uptime
+   and rate limits.
+   ========================================================= */
+const PROXIES = [
+  { name: 'corsproxy.io',  build: url => `https://corsproxy.io/?${encodeURIComponent(url)}` },
+  { name: 'cors.lol',      build: url => `https://api.cors.lol/?url=${encodeURIComponent(url)}` },
+  { name: 'allorigins',    build: url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}` },
+  { name: 'codetabs',      build: url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}` },
+  { name: 'corsfix',       build: url => `https://proxy.corsfix.com/?${url}` },
+];
+
+async function tryProxy(proxy, upstream, timeoutMs = 8000){
+  const ctrl = new AbortController();
+  const t = setTimeout(()=>ctrl.abort(), timeoutMs);
+  try {
+    const r = await fetch(proxy.build(upstream), {
+      cache: 'no-store',
+      signal: ctrl.signal,
+      headers: { 'Accept': 'text/plain' }
+    });
+    clearTimeout(t);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const txt = (await r.text()).trim();
+    if (!txt || txt.length < 15) throw new Error('empty body');
+    if (txt.toLowerCase().includes('<!doctype')) throw new Error('HTML response');
+    const m = parseMetar(txt);
+    if (!m) throw new Error('parse failed');
+    return { proxy: proxy.name, metar: m };
+  } catch(e){
+    clearTimeout(t);
+    throw new Error(`${proxy.name}: ${e.message}`);
+  }
+}
+
+// Promise.any-like: resolve on first success, reject only if ALL fail
+function raceFirst(promises){
+  return new Promise((resolve, reject) => {
+    const errors = [];
+    let pending = promises.length;
+    promises.forEach(p => {
+      p.then(v => resolve(v)).catch(e => {
+        errors.push(e.message);
+        if (--pending === 0) reject(new Error(errors.join(' · ')));
+      });
+    });
+  });
+}
+
+async function fetchMetar(icao){
+  const out = document.getElementById('metarOut');
+  out.className = 'metar-box';
+  out.textContent = '⟳ Racing ' + PROXIES.length + ' CORS proxies in parallel ...';
+
+  const upstream = `https://aviationweather.gov/api/data/metar?ids=${icao}&format=raw`;
+  const attempts = PROXIES.map(p => tryProxy(p, upstream));
+
+  // Separate fetch error handling from apply error handling so that
+  // compute() bugs don't masquerade as proxy failures
+  let winner;
+  try {
+    winner = await raceFirst(attempts);
+  } catch(e) {
+    out.className = 'metar-box err';
+    out.textContent = `✕ All ${PROXIES.length} proxies failed. Paste METAR manually above ↑  (${e.message.slice(0,140)})`;
+    return;
+  }
+
+  try {
+    applyMetar(winner.metar, 'via ' + winner.proxy);
+  } catch(e) {
+    out.className = 'metar-box err';
+    out.textContent = `⚠ METAR loaded (via ${winner.proxy}) but compute error: ${e.message.slice(0,140)}`;
+    console.error('compute() error after METAR apply:', e);
+  }
+}
+
+/* =========================================================
+   MASS INPUT SYNC
+   ========================================================= */
+const KG_PER_LB = 0.453592;
+function syncMass(sourceKg){
+  const kg = Math.max(600, Math.min(1200, sourceKg));
+  const lb = Math.round(kg / KG_PER_LB);
+  document.getElementById('massSlider').value = kg;
+  document.getElementById('massKgInp').value = kg;
+  document.getElementById('massLbInp').value = lb;
+  document.getElementById('massKg').textContent = Math.round(kg);
+  document.getElementById('massLb').textContent = lb;
+  // status indicator
+  const s = document.getElementById('massStatus');
+  if (kg > 1200){
+    s.className = 'mass-status ovr';
+    s.textContent = '✕ EXCEEDS 1200 kg MÄM 40-227 limit';
+  } else if (kg > 1150){
+    s.className = 'mass-status warn';
+    s.textContent = '⚠ Above 1150 kg MTOW · requires MÄM 40-227 (1200 kg STC)';
+  } else if (kg > 980){
+    s.className = 'mass-status ok';
+    s.textContent = '✓ Normal Category · 980–1150 kg';
+  } else {
+    s.className = 'mass-status ok';
+    s.textContent = '✓ Utility Category eligible · ≤980 kg';
+  }
+  // gradient markers on slider
+  const pctUtility = ((980-850)/(1200-850))*100;
+  const pctMtow = ((1150-850)/(1200-850))*100;
+  document.documentElement.style.setProperty('--pct-utility', pctUtility+'%');
+  document.documentElement.style.setProperty('--pct-mtow', pctMtow+'%');
+  return kg;
+}
+
+/* =========================================================
+   WIND COMPONENT
+   ========================================================= */
+function parseWind(str){
+  if (!str) return { dir:null, spd:0, gst:null };
+  const m = str.trim().match(/^(\d{3}|VRB)\/(\d{1,3})(?:G(\d{1,3}))?$/i);
+  if (!m) return { dir:null, spd:0, gst:null };
+  return {
+    dir: m[1].toUpperCase() === 'VRB' ? null : parseInt(m[1]),
+    spd: parseInt(m[2]),
+    gst: m[3] ? parseInt(m[3]) : null,
+  };
+}
+function windComponents(windDir, windSpd, course){
+  if (windDir == null || isNaN(course) || windSpd === 0)
+    return { head: 0, cross: 0, valid: false };
+  // Normalize angle to -180..180
+  let a = ((windDir - course) + 540) % 360 - 180;
+  const rad = a * Math.PI / 180;
+  return {
+    head: windSpd * Math.cos(rad),      // + = headwind, - = tailwind
+    cross: windSpd * Math.sin(rad),     // + = right, - = left
+    valid: true,
+  };
+}
+
+/* =========================================================
+   MAIN COMPUTATION
+   ========================================================= */
+function compute(){
+  /* ---- Field conditions ---- */
+  const fieldElev = parseFloat(document.getElementById('elev').value) || 0;
+  const altim = parseFloat(document.getElementById('altim').value) || 29.92;
+  let fieldOAT = parseFloat(document.getElementById('oat').value) || 15;
+  const unit = document.querySelector('#unitC.active') ? 'C' : 'F';
+  if (unit === 'F') fieldOAT = fToC(fieldOAT);
+
+  const fieldPA = pressureAltitude(fieldElev, altim);
+  const fieldDA = densityAltitude(fieldPA, fieldOAT);
+  const fieldISAdev = fieldOAT - isaTempC(fieldPA);
+
+  /* ---- Cruise conditions (preserving ISA deviation) ---- */
+  const cruiseAlt = parseFloat(document.getElementById('cruiseAlt').value) || 8500;
+  const cruisePA = cruiseAlt + (29.92 - altim) * 1000;
+  const cruiseOAT = isaTempC(cruisePA) + fieldISAdev;
+  const cruiseDA = densityAltitude(cruisePA, cruiseOAT);
+
+  /* ---- Midpoint for climb/descent averaging ---- */
+  const midPA = (fieldPA + cruisePA) / 2;
+  const midOAT = isaTempC(midPA) + fieldISAdev;
+  const midDA = densityAltitude(midPA, midOAT);
+
+  /* ---- Wind ---- */
+  const w = parseWind(document.getElementById('wind').value);
+  const course = parseFloat(document.getElementById('course').value);
+  const wc = windComponents(w.dir, w.spd, course);
+
+  /* ---- Update atmospheric readouts ---- */
+  document.getElementById('paOut').innerHTML = Math.round(fieldPA).toLocaleString() + '<small>ft</small>';
+  document.getElementById('daOut').innerHTML = Math.round(fieldDA).toLocaleString() + '<small>ft</small>';
+  document.getElementById('isaOut').innerHTML = (fieldISAdev>=0?'+':'') + fieldISAdev.toFixed(1) + '<small>°C</small>';
+  document.getElementById('cruisePAOut').innerHTML = Math.round(cruisePA).toLocaleString() + '<small>ft</small>';
+  document.getElementById('cruiseDAOut').innerHTML = Math.round(cruiseDA).toLocaleString() + '<small>ft</small>';
+  document.getElementById('cruiseOATOut').innerHTML = cruiseOAT.toFixed(1) + '<small>°C</small>';
+
+  const hwEl = document.getElementById('hwOut');
+  const xwEl = document.getElementById('xwOut');
+  if (wc.valid){
+    const h = wc.head;
+    const x = wc.cross;
+    hwEl.innerHTML = (h >= 0 ? 'HW ' : 'TW ') + Math.abs(h).toFixed(0) + '<small>kt</small>';
+    hwEl.style.color = h >= 0 ? 'var(--warn)' : 'var(--green)';
+    xwEl.innerHTML = (x >= 0 ? 'R ' : 'L ') + Math.abs(x).toFixed(0) + '<small>kt</small>';
+    xwEl.style.color = 'var(--cyan)';
+  } else {
+    hwEl.innerHTML = 'n/a<small>need course</small>';
+    hwEl.style.color = 'var(--text-faint)';
+    xwEl.innerHTML = 'n/a<small>need course</small>';
+    xwEl.style.color = 'var(--text-faint)';
+  }
+
+  /* ---- Config ---- */
+  const massKg = parseFloat(document.getElementById('massKgInp').value) || 1050;
+  const climbType = document.querySelector('#climbSeg button.active').dataset.climb;
+  const pwr = parseInt(document.querySelector('#pwrSeg button.active').dataset.pwr);
+  const rpm = parseInt(document.getElementById('rpmSel').value);
+  const mix = document.querySelector('#mixSeg button.active').dataset.mix;
+  const glidepath = parseFloat(document.getElementById('glidepath').value) || 3.0;
+  const descFF = parseFloat(document.getElementById('descFF').value) || 5.0;
+
+  const deltaAlt = cruiseAlt - fieldElev;
+
+  /* =====================================================
+     CLIMB  (uses MIDPOINT altitude for averaging)
+     ===================================================== */
+  const cIAS = climbIAS(climbType, massKg);
+  const cCAS = iasToCas(cIAS, climbType === 'takeoff' ? 'TO' : 'UP');
+  const cTAS = cas2tas(cCAS, midDA);
+
+  const rocGrid = climbType === 'takeoff' ? ROC_TAKEOFF_1000KG : ROC_CRUISE_1000KG;
+  const roc1000 = bilinear2D(ROC_PA, ROC_OAT, rocGrid, midPA, midOAT);
+  const roc = Math.max(0, roc1000 + massCorrection(massKg));
+  const cFF = climbFuelFlow(midPA);
+
+  // Debug trace — open DevTools Console (F12) to verify calculation path
+  console.log('[DA40 calc v5.0]', {
+    climbType, climbAltBasis: 'MIDPOINT',
+    midPA: Math.round(midPA), midOAT: midOAT.toFixed(1), midDA: Math.round(midDA),
+    massKg: massKg.toFixed(1), cIAS: cIAS.toFixed(1), cCAS: cCAS.toFixed(1),
+    cTAS_kt: cTAS.toFixed(1),
+    roc1000_fpm: roc1000.toFixed(1),
+    massCorr_fpm: massCorrection(massKg).toFixed(1),
+    finalROC_fpm: roc.toFixed(1),
+  });
+
+  const climbGS = Math.max(0, cTAS - (wc.valid ? wc.head : 0));
+  const climbTimeMin = (roc > 0 && deltaAlt > 0) ? deltaAlt / roc : null;
+  const climbDistNM = (climbTimeMin != null) ? climbGS * climbTimeMin / 60 : null;
+
+  document.getElementById('climbTAS').innerHTML = Math.round(cTAS) + '<small>kt</small>';
+  document.getElementById('climbFF').innerHTML  = cFF.toFixed(1) + '<small>gph</small>';
+  document.getElementById('climbROC').innerHTML = Math.round(roc) + '<small>fpm</small>';
+  document.getElementById('climbTag').textContent =
+    (climbType==='takeoff' ? 'TAKE-OFF · ' : 'CRUISE CLIMB · ') +
+    cIAS.toFixed(0) + ' KIAS · ' +
+    (climbType==='takeoff' ? 'Flaps T/O' : 'Flaps UP') +
+    ' · midpoint ' + Math.round(midPA).toLocaleString() + ' ft PA';
+
+  const climbGSEl = document.getElementById('climbGS');
+  const climbTimeEl = document.getElementById('climbTime');
+  const climbDistEl = document.getElementById('climbDist');
+  if (wc.valid){
+    climbGSEl.innerHTML = Math.round(climbGS) + '<small>kt</small>';
+    climbGSEl.classList.remove('faint');
+  } else {
+    climbGSEl.innerHTML = '≈ TAS<small>no wind/course</small>';
+    climbGSEl.classList.add('faint');
+  }
+  if (climbTimeMin != null){
+    climbTimeEl.innerHTML = climbTimeMin.toFixed(1) + '<small>min</small>';
+    climbTimeEl.classList.remove('faint');
+  } else {
+    climbTimeEl.innerHTML = (deltaAlt <= 0 ? '—' : 'no climb') + '<small></small>';
+    climbTimeEl.classList.add('faint');
+  }
+  if (climbDistNM != null){
+    climbDistEl.innerHTML = climbDistNM.toFixed(1) + '<small>NM</small>';
+    climbDistEl.classList.toggle('faint', !wc.valid);
+  } else {
+    climbDistEl.innerHTML = '—';
+    climbDistEl.classList.add('faint');
+  }
+
+  /* =====================================================
+     CRUISE  (uses CRUISE altitude PA/DA)
+     ===================================================== */
+  const mp = lookupMP(pwr, rpm, cruisePA);
+  const ffRaw = lookupFF(pwr, rpm, mix);
+  const ffCorr = ffRaw != null ? ffRaw * isaPowerCorrection(fieldISAdev) : null;
+  const crzTAS = lookupCruiseTAS(pwr, cruiseDA);
+  const crzTASCorr = crzTAS != null ? crzTAS * Math.pow(isaPowerCorrection(fieldISAdev), 0.3) : null;
+  const crzGS = crzTASCorr != null ? Math.max(0, crzTASCorr - (wc.valid ? wc.head : 0)) : null;
+
+  const mpEl = document.getElementById('cruMP');
+  const ffEl = document.getElementById('cruFF');
+  const tasEl = document.getElementById('cruTAS');
+  const cruGSEl = document.getElementById('cruGS');
+
+  if (mp == null) { mpEl.innerHTML = 'n/a'; mpEl.classList.add('err'); }
+  else { mpEl.innerHTML = mp.toFixed(1) + '<small>inHg</small>'; mpEl.classList.remove('err'); }
+
+  if (ffCorr == null) { ffEl.innerHTML = 'n/a'; ffEl.classList.add('err'); }
+  else { ffEl.innerHTML = ffCorr.toFixed(1) + '<small>gph</small>'; ffEl.classList.remove('err'); }
+
+  if (crzTASCorr == null) {
+    tasEl.innerHTML = 'out of env.'; tasEl.classList.add('err');
+    cruGSEl.innerHTML = '—'; cruGSEl.classList.add('faint');
+  } else {
+    tasEl.innerHTML = Math.round(crzTASCorr) + '<small>kt</small>'; tasEl.classList.remove('err');
+    if (wc.valid){
+      cruGSEl.innerHTML = Math.round(crzGS) + '<small>kt</small>';
+      cruGSEl.classList.remove('faint');
+    } else {
+      cruGSEl.innerHTML = '≈ TAS<small>no wind/course</small>';
+      cruGSEl.classList.add('faint');
+    }
+  }
+
+  document.getElementById('cruiseTag').textContent =
+    pwr+'% · '+rpm+' RPM · '+(mix==='econ'?'Best Econ':'Best Power') +
+    ' · ' + cruiseAlt.toLocaleString() + ' ft MSL';
+
+  /* =====================================================
+     DESCENT  (uses MIDPOINT altitude for TAS)
+     Descent rate from glidepath × ground speed, exact form:
+        Geometry:  tan(γ) = vertical / horizontal
+                   ROD_fpm / GS_fpm = tan(γ)
+                   ROD_fpm = GS_fpm × tan(γ)
+        Convert GS:  GS_fpm = GS_kt × (FT_PER_NM / 60)
+                            = GS_kt × (6076.12 / 60)
+                            = GS_kt × 101.2687
+     ===================================================== */
+  const FT_PER_NM = 6076.12;                      // exact: 1 NM = 6076.115 49 ft
+  const FT_PER_MIN_PER_KT = FT_PER_NM / 60;       // = 101.2687 (kt → fpm horizontal)
+  const descMode = document.getElementById('descModeIAS').classList.contains('active') ? 'IAS' : 'TAS';
+  const descSpeed = parseFloat(document.getElementById('descIAS').value) || 100;
+  let dTAS;
+  if (descMode === 'TAS'){
+    dTAS = descSpeed;
+  } else {
+    const dCAS = iasToCas(descSpeed, 'UP');
+    dTAS = cas2tas(dCAS, midDA);
+  }
+  const desGS = Math.max(0, dTAS - (wc.valid ? wc.head : 0));
+  const desGS_fpm = desGS * FT_PER_MIN_PER_KT;
+  const descRate = Math.round(desGS_fpm * Math.tan(glidepath * Math.PI / 180));
+  const desTimeMin = (descRate > 0 && deltaAlt > 0) ? deltaAlt / descRate : null;
+  const desDistNM = (desTimeMin != null) ? desGS * desTimeMin / 60 : null;
+
+  document.getElementById('desTAS').innerHTML = Math.round(dTAS) + '<small>kt</small>';
+  document.getElementById('desFF').innerHTML  = descFF.toFixed(1) + '<small>gph</small>';
+  document.getElementById('desROC').innerHTML = descRate + '<small>fpm</small>';
+
+  // Update descent phase tag with glidepath
+  const descTag = document.getElementById('descTag');
+  if (descTag) descTag.textContent = `Flaps UP · ${glidepath.toFixed(1)}° glidepath · cruise → field`;
+  const descRateSrc = document.getElementById('descRateSrc');
+  if (descRateSrc) descRateSrc.textContent = `ROD = GS × (6076.12/60) × tan(γ) · γ=${glidepath.toFixed(1)}°`;
+
+  // Update descent TAS source label based on mode
+  const desTASSrc = document.getElementById('desTASSrc');
+  if (desTASSrc){
+    desTASSrc.textContent = descMode === 'TAS'
+      ? 'User input · direct TAS'
+      : 'AFM 5.3.1 · IAS→CAS→TAS at midpoint DA';
+  }
+
+  const desGSEl = document.getElementById('desGS');
+  const desTimeEl = document.getElementById('desTime');
+  const desDistEl = document.getElementById('desDist');
+  if (wc.valid){
+    desGSEl.innerHTML = Math.round(desGS) + '<small>kt</small>';
+    desGSEl.classList.remove('faint');
+  } else {
+    desGSEl.innerHTML = '≈ TAS<small>no wind/course</small>';
+    desGSEl.classList.add('faint');
+  }
+  if (desTimeMin != null){
+    desTimeEl.innerHTML = desTimeMin.toFixed(1) + '<small>min</small>';
+    desTimeEl.classList.remove('faint');
+  } else {
+    desTimeEl.innerHTML = '—';
+    desTimeEl.classList.add('faint');
+  }
+  if (desDistNM != null){
+    desDistEl.innerHTML = desDistNM.toFixed(1) + '<small>NM</small>';
+    desDistEl.classList.toggle('faint', !wc.valid);
+  } else {
+    desDistEl.innerHTML = '—';
+    desDistEl.classList.add('faint');
+  }
+
+  /* =====================================================
+     TAKE-OFF DISTANCE  (uses field PA/OAT/wind)
+     ===================================================== */
+  const fieldHW = wc.valid ? wc.head : 0;
+  const toResult = computeRunwayDistance('takeoff', fieldPA, fieldOAT, massKg, fieldHW);
+  document.getElementById('toGround').innerHTML = toResult.ground.toLocaleString() + '<small>ft</small>';
+  document.getElementById('toObs').innerHTML    = toResult.obstacle.toLocaleString() + '<small>ft</small>';
+  document.getElementById('toTag').textContent =
+    `MAX PWR · 2700 RPM · Flaps T/O · ${wc.valid ? (fieldHW>=0?'HW':'TW')+' '+Math.abs(Math.round(fieldHW))+'kt' : 'no wind/course'} · ref ${toResult.groundRef}ft`;
+
+  /* =====================================================
+     LANDING DISTANCE  (Flaps LDG or Flaps UP)
+     ===================================================== */
+  const ldgFlaps = document.getElementById('ldgFlapsLDG').classList.contains('active') ? 'LDG' : 'UP';
+  const ldgPhase = ldgFlaps === 'LDG' ? 'landingLdg' : 'landingUp';
+  const ldgResult = computeRunwayDistance(ldgPhase, fieldPA, fieldOAT, massKg, fieldHW);
+  document.getElementById('ldgGround').innerHTML = ldgResult.ground.toLocaleString() + '<small>ft</small>';
+  document.getElementById('ldgObs').innerHTML    = ldgResult.obstacle.toLocaleString() + '<small>ft</small>';
+  const ldgSection = ldgFlaps === 'LDG' ? '5.3.10' : '5.3.11';
+  const ldgMult = ldgFlaps === 'LDG' ? '2.13' : '2.15';
+  document.getElementById('ldgRollSrc').textContent = `AFM ${ldgSection} · at field PA/OAT · mass + wind corrected`;
+  document.getElementById('ldgObsSrc').textContent = `AFM ${ldgSection} · ground roll × ${ldgMult}`;
+
+  /* ===== ForeFlight block (cruise altitude values) ===== */
+  document.getElementById('ff-cTAS').textContent   = Math.round(cTAS);
+  document.getElementById('ff-cFF').textContent    = cFF.toFixed(1);
+  document.getElementById('ff-cROC').textContent   = Math.round(roc);
+  document.getElementById('ff-crzTAS').textContent = crzTASCorr != null ? Math.round(crzTASCorr) : '—';
+  document.getElementById('ff-crzFF').textContent  = ffCorr != null ? ffCorr.toFixed(1) : '—';
+  document.getElementById('ff-dTAS').textContent   = Math.round(dTAS);
+  document.getElementById('ff-dFF').textContent    = descFF.toFixed(1);
+  document.getElementById('ff-dROC').textContent   = descRate;
+}
+
+/* =========================================================
+   EVENT WIRING
+   ========================================================= */
+document.getElementById('fetchMetar').addEventListener('click', ()=>{
+  const icao = document.getElementById('icao').value.trim().toUpperCase();
+  if (icao.length < 3) { alert('Enter a valid ICAO code.'); return; }
+  fetchMetar(icao);
+});
+document.getElementById('icao').addEventListener('keypress', e=>{
+  if (e.key === 'Enter') document.getElementById('fetchMetar').click();
+});
+
+// METAR paste handler — auto-parse on paste or blur
+const mp = document.getElementById('metarPaste');
+function parsePastedMetar(){
+  const txt = mp.value.trim();
+  if (!txt) return;
+  const m = parseMetar(txt);
+  applyMetar(m, 'pasted');
+}
+mp.addEventListener('paste', ()=> setTimeout(parsePastedMetar, 10));
+mp.addEventListener('blur', parsePastedMetar);
+mp.addEventListener('keydown', e=>{
+  if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); parsePastedMetar(); }
+});
+
+// Unit toggle
+document.getElementById('unitC').addEventListener('click', ()=>{
+  const oat = document.getElementById('oat');
+  if (document.getElementById('unitF').classList.contains('active')){
+    oat.value = fToC(parseFloat(oat.value)||0).toFixed(1);
+  }
+  document.getElementById('unitC').classList.add('active');
+  document.getElementById('unitF').classList.remove('active');
+  compute();
+});
+document.getElementById('unitF').addEventListener('click', ()=>{
+  const oat = document.getElementById('oat');
+  if (document.getElementById('unitC').classList.contains('active')){
+    oat.value = cToF(parseFloat(oat.value)||0).toFixed(1);
+  }
+  document.getElementById('unitF').classList.add('active');
+  document.getElementById('unitC').classList.remove('active');
+  compute();
+});
+
+// Segmented buttons
+document.querySelectorAll('#climbSeg button, #pwrSeg button, #mixSeg button')
+  .forEach(b=>b.addEventListener('click', ()=>{
+    const parent = b.parentElement;
+    parent.querySelectorAll('button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    compute();
+  }));
+
+// Mass controls
+document.getElementById('massSlider').addEventListener('input', e=>{
+  syncMass(parseFloat(e.target.value));
+  compute();
+});
+document.getElementById('massKgInp').addEventListener('input', e=>{
+  const kg = parseFloat(e.target.value);
+  if (!isNaN(kg)) { syncMass(kg); compute(); }
+});
+document.getElementById('massLbInp').addEventListener('input', e=>{
+  const lb = parseFloat(e.target.value);
+  if (!isNaN(lb)) { syncMass(lb * KG_PER_LB); compute(); }
+});
+document.querySelectorAll('.mass-quick button').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    syncMass(parseFloat(b.dataset.mkg));
+    compute();
+  });
+});
+
+// Descent IAS/TAS mode toggle
+document.getElementById('descModeIAS').addEventListener('click', ()=>{
+  document.getElementById('descModeIAS').classList.add('active');
+  document.getElementById('descModeTAS').classList.remove('active');
+  compute();
+});
+document.getElementById('descModeTAS').addEventListener('click', ()=>{
+  document.getElementById('descModeTAS').classList.add('active');
+  document.getElementById('descModeIAS').classList.remove('active');
+  compute();
+});
+
+// Landing flaps toggle (LDG vs UP)
+document.getElementById('ldgFlapsLDG').addEventListener('click', ()=>{
+  document.getElementById('ldgFlapsLDG').classList.add('active');
+  document.getElementById('ldgFlapsUP').classList.remove('active');
+  compute();
+});
+document.getElementById('ldgFlapsUP').addEventListener('click', ()=>{
+  document.getElementById('ldgFlapsUP').classList.add('active');
+  document.getElementById('ldgFlapsLDG').classList.remove('active');
+  compute();
+});
+
+// Live updates
+['elev','altim','oat','cruiseAlt','course','wind','glidepath','descIAS','descFF','rpmSel'].forEach(id=>{
+  const el = document.getElementById(id);
+  el.addEventListener('input', compute);
+  el.addEventListener('change', compute);
+});
+
+// ForeFlight copy
+document.getElementById('copyFF').addEventListener('click', async()=>{
+  const v = id => document.getElementById(id).textContent;
+  const txt =
+    `DA40 Perf Profile · ${new Date().toLocaleString()}\n` +
+    `PA ${document.getElementById('paOut').textContent} · DA ${document.getElementById('daOut').textContent} · ISA ${document.getElementById('isaOut').textContent}\n` +
+    `Mass ${document.getElementById('massKg').textContent} kg (${document.getElementById('massLb').textContent} lb)\n` +
+    `────────────────────────────────\n` +
+    `Climb TAS:   ${v('ff-cTAS')} kt\n` +
+    `Climb FF:    ${v('ff-cFF')} gph\n` +
+    `Climb Rate:  ${v('ff-cROC')} fpm\n` +
+    `Cruise TAS:  ${v('ff-crzTAS')} kt\n` +
+    `Cruise FF:   ${v('ff-crzFF')} gph\n` +
+    `Descent TAS: ${v('ff-dTAS')} kt\n` +
+    `Descent FF:  ${v('ff-dFF')} gph\n` +
+    `Descent FPM: ${v('ff-dROC')}\n`;
+  try {
+    await navigator.clipboard.writeText(txt);
+    const b = document.getElementById('copyFF');
+    b.textContent = '✓ COPIED'; b.classList.add('ok');
+    setTimeout(()=>{b.textContent='COPY'; b.classList.remove('ok')}, 1400);
+  } catch(e) { alert('Copy failed: ' + e.message); }
+});
+
+// Initial sync and compute
+syncMass(1050);
+compute();
+</script>
+</body>
+</html>
