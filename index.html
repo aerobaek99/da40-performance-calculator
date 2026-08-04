@@ -528,7 +528,7 @@
     <span>AFM <b>6.01.01-E</b></span>
     <span>REV <b>10</b></span>
     <span>SEC <b>5.3</b></span>
-    <span style="color:var(--green)">BUILD <b>v6.0</b></span>
+    <span style="color:var(--green)">BUILD <b>v6.1</b></span>
   </div>
 </div>
 
@@ -1368,8 +1368,21 @@ function applyMetar(m, source){
 
   if (m.icao){
     document.getElementById('icao').value = m.icao;
-    const elev = lookupElevation(m.icao);
-    if (elev != null) document.getElementById('elev').value = elev;
+  }
+  /* Elevation: live value from the GoPilot API first (official field
+     elev, works for any airport), then the built-in table. NEVER keep
+     the previous airport's elevation silently — blank + warn instead. */
+  const elevEl = document.getElementById('elev');
+  const elevFt = (typeof m.elevFt === 'number') ? m.elevFt : lookupElevation(m.icao);
+  if (elevFt != null){
+    elevEl.value = elevFt;
+    elevEl.style.borderColor = '';
+    elevEl.style.boxShadow = '';
+  } else {
+    elevEl.value = '';
+    elevEl.style.borderColor = 'var(--warn)';
+    elevEl.style.boxShadow = '0 0 0 1px var(--warn)';
+    out.textContent += '  ·  ⚠ field elev unknown — enter manually';
   }
   if (m.altim != null){
     document.getElementById('altim').value = m.altim.toFixed(2);
@@ -1450,13 +1463,21 @@ async function tryOwnApi(icao, timeoutMs = 6000){
   const ctrl = new AbortController();
   const t = setTimeout(()=>ctrl.abort(), timeoutMs);
   try {
-    const r = await fetch(`${OWN_METAR_API}?ids=${icao}`, { cache:'no-store', signal: ctrl.signal });
+    const r = await fetch(`${OWN_METAR_API}?ids=${icao}&format=json`, { cache:'no-store', signal: ctrl.signal });
     clearTimeout(t);
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const txt = (await r.text()).trim();
-    if (!txt || txt.length < 15) throw new Error('empty body');
-    const m = parseMetar(txt);
+    const body = (await r.text()).trim();
+    if (!body || body.length < 15) throw new Error('empty body');
+    // Worker v2 returns JSON {id, raw, elev_ft}; worker v1 returns raw text.
+    let data = null;
+    try { data = JSON.parse(body); } catch {}
+    const rawMetar = (data && data.raw) ? data.raw : body;
+    const m = parseMetar(rawMetar);
     if (!m) throw new Error('parse failed');
+    if (data){
+      if (typeof data.elev_ft === 'number') m.elevFt = data.elev_ft;  // official field elev
+      if (data.id) m.icao = data.id;                                  // resolved station (U14 → KU14)
+    }
     return m;
   } catch(e){
     clearTimeout(t);
