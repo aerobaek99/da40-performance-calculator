@@ -528,7 +528,7 @@
     <span>AFM <b>6.01.01-E</b></span>
     <span>REV <b>10</b></span>
     <span>SEC <b>5.3</b></span>
-    <span style="color:var(--green)">BUILD <b>v5.9</b></span>
+    <span style="color:var(--green)">BUILD <b>v6.0</b></span>
   </div>
 </div>
 
@@ -559,7 +559,7 @@
           <input id="icao" class="inp mono" placeholder="KPVU" maxlength="4" style="text-transform:uppercase" value="KPVU" />
         </div>
         <div class="field" style="margin:0;align-self:end">
-          <button class="btn" id="fetchMetar">FETCH via CORS proxy</button>
+          <button class="btn" id="fetchMetar">FETCH METAR</button>
         </div>
       </div>
       <div class="metar-box empty" id="metarOut">— paste METAR above, or fetch by ICAO —</div>
@@ -1440,25 +1440,62 @@ function raceFirst(promises){
   });
 }
 
+/* Primary: GoPilot's own Cloudflare Worker METAR proxy (api.gopilot.blog).
+   Reliable, CORS-enabled, under our control — public proxies increasingly
+   block requests from real production domains (403 / registration walls),
+   so they are demoted to fallback only. */
+const OWN_METAR_API = 'https://api.gopilot.blog/metar';
+
+async function tryOwnApi(icao, timeoutMs = 6000){
+  const ctrl = new AbortController();
+  const t = setTimeout(()=>ctrl.abort(), timeoutMs);
+  try {
+    const r = await fetch(`${OWN_METAR_API}?ids=${icao}`, { cache:'no-store', signal: ctrl.signal });
+    clearTimeout(t);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const txt = (await r.text()).trim();
+    if (!txt || txt.length < 15) throw new Error('empty body');
+    const m = parseMetar(txt);
+    if (!m) throw new Error('parse failed');
+    return m;
+  } catch(e){
+    clearTimeout(t);
+    throw new Error(`gopilot api: ${e.message}`);
+  }
+}
+
 async function fetchMetar(icao){
   const out = document.getElementById('metarOut');
   out.className = 'metar-box';
-  out.textContent = '⟳ Racing ' + PROXIES.length + ' CORS proxies in parallel ...';
 
+  /* --- 1) Own API first --- */
+  out.textContent = '⟳ Fetching via api.gopilot.blog ...';
+  try {
+    const m = await tryOwnApi(icao);
+    try {
+      applyMetar(m, 'via gopilot api');
+    } catch(e){
+      out.className = 'metar-box err';
+      out.textContent = `⚠ METAR loaded (gopilot api) but compute error: ${e.message.slice(0,140)}`;
+      console.error('compute() error after METAR apply:', e);
+    }
+    return;
+  } catch(ownErr) {
+    console.warn('Own METAR API failed, falling back to public proxies:', ownErr.message);
+  }
+
+  /* --- 2) Fallback: public proxy race --- */
+  out.textContent = '⟳ gopilot api unavailable — racing ' + PROXIES.length + ' public proxies ...';
   const upstream = `https://aviationweather.gov/api/data/metar?ids=${icao}&format=raw`;
   const attempts = PROXIES.map(p => tryProxy(p, upstream));
-
-  // Separate fetch error handling from apply error handling so that
-  // compute() bugs don't masquerade as proxy failures
   let winner;
   try {
     winner = await raceFirst(attempts);
   } catch(e) {
     out.className = 'metar-box err';
-    out.textContent = `✕ All ${PROXIES.length} proxies failed. Paste METAR manually above ↑  (${e.message.slice(0,140)})`;
+    out.textContent = `✕ Own API + all ${PROXIES.length} proxies failed. Paste METAR manually above ↑  (${e.message.slice(0,140)})`;
     return;
   }
-
   try {
     applyMetar(winner.metar, 'via ' + winner.proxy);
   } catch(e) {
